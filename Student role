@@ -1,0 +1,176 @@
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const cors = require("cors");
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+/* ================== DATABASE ================== */
+
+mongoose.connect(process.env.MONGO_URI)
+.then(() => console.log("MongoDB Connected"))
+.catch(err => console.log(err));
+
+/* ================== MODELS ================== */
+
+const studentSchema = new mongoose.Schema({
+  name: String,
+  email: { type: String, unique: true },
+  password: String,
+  verified: { type: Boolean, default: false },
+  registeredEvents: [{ type: String }]
+});
+
+const Student = mongoose.model("Student", studentSchema);
+
+const eventSchema = new mongoose.Schema({
+  title: String,
+  description: String,
+  date: String
+});
+
+const Event = mongoose.model("Event", eventSchema);
+
+/* ================== EMAIL SETUP ================== */
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+/* ================== MIDDLEWARE ================== */
+
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization;
+  if (!token) return res.status(401).json({ message: "No token" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    res.status(401).json({ message: "Invalid token" });
+  }
+};
+
+/* ================== ROUTES ================== */
+
+/* ===== REGISTER ===== */
+
+app.post("/student/register", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const student = await Student.create({
+      name,
+      email,
+      password: hashed
+    });
+
+    const token = jwt.sign({ id: student._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d"
+    });
+
+    const verifyLink = `http://localhost:5000/student/verify/${token}`;
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Campus Connect Email Verification",
+      html: `<h3>Verify your email</h3>
+             <a href="${verifyLink}">Click here to verify</a>`
+    });
+
+    res.json({ message: "Registration successful. Check email to verify." });
+
+  } catch (err) {
+    res.status(400).json({ message: "Email already exists" });
+  }
+});
+
+/* ===== VERIFY EMAIL ===== */
+
+app.get("/student/verify/:token", async (req, res) => {
+  try {
+    const decoded = jwt.verify(req.params.token, process.env.JWT_SECRET);
+    await Student.findByIdAndUpdate(decoded.id, { verified: true });
+    res.send("Email Verified Successfully");
+  } catch {
+    res.send("Invalid or Expired Link");
+  }
+});
+
+/* ===== LOGIN ===== */
+
+app.post("/student/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  const student = await Student.findOne({ email });
+  if (!student) return res.status(400).json({ message: "Invalid email" });
+
+  if (!student.verified)
+    return res.status(400).json({ message: "Verify email first" });
+
+  const isMatch = await bcrypt.compare(password, student.password);
+  if (!isMatch) return res.status(400).json({ message: "Wrong password" });
+
+  const token = jwt.sign({ id: student._id }, process.env.JWT_SECRET, {
+    expiresIn: "7d"
+  });
+
+  res.json({ token });
+});
+
+/* ===== DASHBOARD ===== */
+
+app.get("/student/dashboard", authMiddleware, async (req, res) => {
+  const student = await Student.findById(req.user.id).select("-password");
+  res.json(student);
+});
+
+/* ===== UPDATE PROFILE ===== */
+
+app.put("/student/profile", authMiddleware, async (req, res) => {
+  const { name } = req.body;
+
+  await Student.findByIdAndUpdate(req.user.id, { name });
+
+  res.json({ message: "Profile updated" });
+});
+
+/* ===== VIEW EVENTS ===== */
+
+app.get("/student/events", authMiddleware, async (req, res) => {
+  const events = await Event.find();
+  res.json(events);
+});
+
+/* ===== REGISTER EVENT ===== */
+
+app.post("/student/register-event/:eventId", authMiddleware, async (req, res) => {
+  const student = await Student.findById(req.user.id);
+
+  if (student.registeredEvents.includes(req.params.eventId))
+    return res.status(400).json({ message: "Already registered" });
+
+  student.registeredEvents.push(req.params.eventId);
+  await student.save();
+
+  res.json({ message: "Event Registered Successfully" });
+});
+
+/* ================== START SERVER ================== */
+
+app.listen(process.env.PORT, () =>
+  console.log(`Server running on port ${process.env.PORT}`)
+);
