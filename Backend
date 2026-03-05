@@ -1,0 +1,30 @@
+# Campus Connect Student Backend API Documentation
+
+## Table of Contents
+- [Introduction](#introduction)
+- [Features](#features)
+- [Installation](#installation)
+- [API Endpoints](#api-endpoints)
+- [Security Features](#security-features)
+- [Database Schema](#database-schema)
+- [Testing](#testing)
+- [Dependencies](#dependencies)
+- [Production Checklist](#production-checklist)
+- [Contributing Guidelines](#contributing-guidelines)
+
+## Introduction
+The Campus Connect Student Backend API provides a comprehensive solution for managing student data and facilitating communication between students and faculty. This API is designed to be scalable, secure, and easy to integrate with various frontend applications.
+
+## Features
+- User authentication and authorization.
+- CRUD operations for student records.
+- Course management functionality.
+- Notifications and announcements system.
+- File uploads for assignments and resources.
+- Integration with external services for enriched functionality.
+
+## Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/tsrohith1206/Campus-Connect-Student.git
+   cd Campus-Connect-Student
