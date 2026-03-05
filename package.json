@@ -1,0 +1,47 @@
+{
+  "name": "campus-connect-student",
+  "version": "1.0.0",
+  "description": "Campus Connect Student Backend API with Enhanced Security",
+  "main": "student.js",
+  "scripts": {
+    "start": "node student.js",
+    "dev": "nodemon student.js",
+    "test": "jest --detectOpenHandles",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "campus",
+    "connect",
+    "student",
+    "events",
+    "registration"
+  ],
+  "author": "tsrohith1206",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^6.7.0",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.3",
+    "nodemailer": "^6.9.1",
+    "validator": "^13.9.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22",
+    "eslint": "^8.40.0",
+    "prettier": "^2.8.8",
+    "jest": "^29.5.0",
+    "supertest": "^6.3.3"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}
